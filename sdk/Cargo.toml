@@ -1,0 +1,43 @@
+[package]
+name = "ethertools-sdk"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+ethrex-l2.workspace = true
+ethrex-common.workspace = true
+ethrex-blockchain.workspace = true
+ethrex-prover.workspace = true
+ethrex-rlp.workspace = true
+ethrex-rpc.workspace = true
+
+# Runtime
+tokio = "1.43.0"
+
+# Clients
+reqwest = { version = "0.12.7", features = ["json"] }
+jsonwebtoken = "9.3.0"
+
+# Crypto
+keccak-hash.workspace = true
+secp256k1.workspace = true
+
+# Utils
+hex.workspace = true
+itertools = "0.14.0"
+toml = "0.8.19"
+dirs = "6.0.0"
+envy = "0.4.2"
+thiserror.workspace = true
+
+# Logging
+log = "0.4"
+tracing = "0.1.41"
+tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
+
+# Serde
+serde = "1.0.218"
+serde_json = "1.0.139"
+
+[lib]
+path = "./src/sdk.rs"

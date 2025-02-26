@@ -1,0 +1,49 @@
+[workspace]
+members = [
+    "cli",
+    "sdk",
+]
+default-members = ["cli"]
+resolver = "3"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+warnings = "warn"
+
+[workspace.lints.clippy]
+panic = "deny"
+unnecessary_cast = "warn"
+deref_by_slicing = "warn"
+indexing_slicing = "warn"
+manual_unwrap_or = "warn"
+manual_unwrap_or_default = "warn"
+as_conversions = "deny"
+unwrap_used = "deny"
+expect_used = "deny"
+arithmetic_side_effects = "deny"
+overflow_check_conditional = "warn"
+manual_saturating_arithmetic = "warn"
+
+[workspace.dependencies]
+ethertools-cli = { path = "cli" }
+ethertools-sdk = { path = "sdk" }
+
+ethrex-l2 = { git = "https://github.com/lambdaclass/ethrex", package = "ethrex-l2" }
+ethrex-common = { git = "https://github.com/lambdaclass/ethrex", package = "ethrex-common" }
+ethrex-blockchain = { git = "https://github.com/lambdaclass/ethrex", package = "ethrex-blockchain" }
+ethrex-prover = { git = "https://github.com/lambdaclass/ethrex", package = "ethrex-prover" }
+ethrex-rlp = { git = "https://github.com/lambdaclass/ethrex", package = "ethrex-rlp" }
+ethrex-rpc = { git = "https://github.com/lambdaclass/ethrex", package = "ethrex-rpc" } 
+
+keccak-hash = "0.11.0"
+thiserror = "2.0.11"
+hex = "0.4.3"
+secp256k1 = { version = "0.29.1", default-features = false, features = [
+  "global-context",
+  "recovery",
+  "rand",
+] }
