@@ -203,7 +203,7 @@ impl Command {
                 println!("{tx_hash:#x}");
 
                 if !args.background {
-                    wait_for_transaction_receipt(&client, tx_hash).await?;
+                    wait_for_transaction_receipt(tx_hash, &client, 100).await?;
                 }
             }
             Command::Send { args, rpc_url } => {
@@ -241,7 +241,7 @@ impl Command {
                 println!("{tx_hash:#x}",);
 
                 if !args.background {
-                    wait_for_transaction_receipt(&client, tx_hash).await?;
+                    wait_for_transaction_receipt(tx_hash, &client, 100).await?;
                 }
             }
             Command::Call { args, rpc_url } => {
@@ -276,7 +276,7 @@ impl Command {
 
                 let client = EthClient::new(&rpc_url);
 
-                let (deployment_tx_hash, deployed_contract_address) = client
+                let (tx_hash, deployed_contract_address) = client
                     .deploy(
                         from,
                         args.private_key,
@@ -293,11 +293,11 @@ impl Command {
                     )
                     .await?;
 
-                println!("Contract deployed in tx: {deployment_tx_hash:#x}");
+                println!("Contract deployed in tx: {tx_hash:#x}");
                 println!("Contract address: {deployed_contract_address:#x}");
 
                 if !args.background {
-                    wait_for_transaction_receipt(&client, deployment_tx_hash).await?;
+                    wait_for_transaction_receipt(tx_hash, &client, 100).await?;
                 }
             }
         };

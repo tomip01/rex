@@ -1,6 +1,6 @@
 use crate::client::{EthClient, EthClientError, Overrides};
-use errors::Error;
 use ethrex_common::{Address, H256, U256};
+use ethrex_rpc::types::receipt::RpcReceipt;
 use secp256k1::SecretKey;
 
 pub mod calldata;
@@ -30,18 +30,30 @@ pub async fn transfer(
     client.send_eip1559_transaction(&tx, &private_key).await
 }
 
-pub async fn wait_for_transaction_receipt(client: &EthClient, tx_hash: H256) -> Result<(), Error> {
-    println!("Waiting for transaction receipt...");
-    while client
-        .get_transaction_receipt(tx_hash)
-        .await
-        .unwrap()
-        .is_none()
-    {
-        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+pub async fn wait_for_transaction_receipt(
+    tx_hash: H256,
+    client: &EthClient,
+    max_retries: u64,
+) -> Result<RpcReceipt, EthClientError> {
+    let mut receipt = client.get_transaction_receipt(tx_hash).await?;
+    let mut r#try = 1;
+    while receipt.is_none() {
+        println!("[{try}/{max_retries}] Retrying to get transaction receipt for {tx_hash:#x}");
+
+        if max_retries == r#try {
+            return Err(EthClientError::Custom(format!(
+                "Transaction receipt for {tx_hash:#x} not found after {max_retries} retries"
+            )));
+        }
+        r#try += 1;
+
+        tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+
+        receipt = client.get_transaction_receipt(tx_hash).await?;
     }
-    println!("Transaction confirmed");
-    Ok(())
+    receipt.ok_or(EthClientError::Custom(
+        "Transaction receipt is None".to_owned(),
+    ))
 }
 
 pub fn balance_in_eth(eth: bool, balance: U256) -> String {
