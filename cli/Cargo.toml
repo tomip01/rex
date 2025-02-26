@@ -1,0 +1,45 @@
+[package]
+name = "ethertools-cli"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+ethertools-sdk.workspace = true
+
+ethrex-l2.workspace = true
+ethrex-common.workspace = true
+ethrex-blockchain.workspace = true
+ethrex-prover.workspace = true
+ethrex-rlp.workspace = true
+ethrex-rpc.workspace = true
+
+# Runtime
+tokio = "1.43.0"
+
+# CLI
+clap = { version = "4.3", features = ["derive"] }
+clap_complete = "4.5.17"
+eyre = "0.6"
+dialoguer = "0.11"
+colored = "3.0.0"
+spinoff = "0.8.0"
+strum = "0.27.1"
+
+# Crypto
+keccak-hash.workspace = true
+secp256k1.workspace = true
+
+# Utils
+hex.workspace = true
+itertools = "0.14.0"
+toml = "0.8.19"
+dirs = "6.0.0"
+
+# Logging
+log = "0.4"
+tracing = "0.1.41"
+tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
+
+# Serde
+serde = "1.0.218"
+serde_json = "1.0.139"
