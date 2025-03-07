@@ -30,6 +30,8 @@ pub(crate) struct CLI {
 
 #[derive(Subcommand)]
 pub(crate) enum Command {
+    #[clap(subcommand, about = "L2 specific commands.")]
+    L2(l2::Command),
     #[clap(subcommand, about = "Generate shell completion scripts.")]
     Autocomplete(autocomplete::Command),
     #[clap(about = "Get the current block_number.", visible_alias = "bl")]
@@ -109,8 +111,18 @@ pub(crate) enum Command {
         #[arg(default_value = "http://localhost:8545", env = "RPC_URL")]
         rpc_url: String,
     },
-    #[clap(subcommand, about = "L2 specific commands.")]
-    L2(l2::Command),
+    #[clap(about = "Get the network's chain id.")]
+    ChainId {
+        #[arg(
+            short,
+            long,
+            default_value_t = false,
+            help = "Display the chain id as a hex-string."
+        )]
+        hex: bool,
+        #[arg(default_value = "http://localhost:8545", env = "RPC_URL")]
+        rpc_url: String,
+    },
 }
 
 impl Command {
@@ -298,6 +310,17 @@ impl Command {
 
                 if !args.background {
                     wait_for_transaction_receipt(tx_hash, &client, 100).await?;
+                }
+            }
+            Command::ChainId { hex, rpc_url } => {
+                let eth_client = EthClient::new(&rpc_url);
+
+                let chain_id = eth_client.get_chain_id().await?;
+
+                if hex {
+                    println!("{chain_id:#x}");
+                } else {
+                    println!("{chain_id}");
                 }
             }
         };
