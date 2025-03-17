@@ -22,7 +22,7 @@ pub async fn start() -> eyre::Result<()> {
     command.run().await
 }
 
-#[allow(clippy::upper_case_acronyms)] 
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Parser)]
 #[command(name="rex", author, version=VERSION_STRING, about, long_about = None)]
 pub(crate) struct CLI {
@@ -88,6 +88,20 @@ pub(crate) enum Command {
         zero: bool,
         #[arg(short, long, action = ArgAction::SetTrue, conflicts_with_all = ["from_private_key", "zero"], required_unless_present_any = ["from_private_key", "zero"], help = "A random address.")]
         random: bool,
+    },
+    #[clap(
+        about = "Get either the keccak for a given input, the zero hash, the empty string, or a random hash",
+        visible_alias = "h"
+    )]
+    Hash {
+        #[arg(long, value_parser = parse_hex, conflicts_with_all = ["zero", "random", "string"], required_unless_present_any = ["zero", "random", "string"], help = "The input to hash.")]
+        input: Option<Bytes>,
+        #[arg(short, long, action = ArgAction::SetTrue, conflicts_with_all = ["input", "random", "string"], required_unless_present_any = ["input", "random", "string"], help = "The zero hash.")]
+        zero: bool,
+        #[arg(short, long, action = ArgAction::SetTrue, conflicts_with_all = ["input", "zero", "string"], required_unless_present_any = ["input", "zero", "string"], help = "A random hash.")]
+        random: bool,
+        #[arg(short, long, action = ArgAction::SetTrue, conflicts_with_all = ["input", "zero", "random"], required_unless_present_any = ["input", "zero", "random"], help = "Hash of empty string")]
+        string: bool,
     },
     Signer {
         #[arg(value_parser = parse_message)]
@@ -208,6 +222,26 @@ impl Command {
                 };
 
                 println!("{address:#x}");
+            }
+            Command::Hash {
+                input,
+                zero,
+                random,
+                string,
+            } => {
+                let hash = if let Some(input) = input {
+                    keccak(&input)
+                } else if zero {
+                    H256::zero()
+                } else if random {
+                    H256::random()
+                } else if string {
+                    keccak(b"")
+                } else {
+                    return Err(eyre::Error::msg("No option provided"));
+                };
+
+                println!("{hash:#x}");
             }
             Command::Signer { message, signature } => {
                 let raw_recovery_id = if signature[64] >= 27 {
