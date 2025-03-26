@@ -1,3 +1,6 @@
+use std::path::PathBuf;
+use std::time::Duration;
+
 use crate::commands::l2;
 use crate::utils::{parse_hex, parse_message};
 use crate::{
@@ -14,6 +17,7 @@ use rex_sdk::{
     transfer, wait_for_transaction_receipt,
 };
 use secp256k1::SecretKey;
+use tracing::info;
 
 pub const VERSION_STRING: &str = env!("CARGO_PKG_VERSION");
 
@@ -30,6 +34,7 @@ pub(crate) struct CLI {
     command: Command,
 }
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Subcommand)]
 pub(crate) enum Command {
     #[clap(
@@ -117,6 +122,21 @@ pub(crate) enum Command {
     },
     #[clap(subcommand, about = "L2 specific commands.")]
     L2(l2::Command),
+    #[clap(about = "Initializes a development node.")]
+    Node {
+        #[clap(flatten)]
+        opts: ethrex::cli::Options,
+        #[clap(flatten)]
+        l2_opts: ethrex::cli::L2Options,
+        #[clap(flatten)]
+        based_opts: ethrex::cli::BasedOptions,
+        #[arg(long, action = ArgAction::SetTrue, default_value_t = false, conflicts_with = "based_enabled", help = "Inits an ethrex L2 node.")]
+        l2_enabled: bool,
+        #[arg(long, action = ArgAction::SetTrue, default_value_t = false, conflicts_with = "l2_enabled", help = "Inits a based ethrex L2 node")]
+        based_enabled: bool,
+        #[command(subcommand)]
+        subcommand: Option<ethrex::cli::Subcommand>,
+    },
     #[clap(about = "Get the account's nonce.", visible_aliases = ["n"])]
     Nonce {
         account: Address,
@@ -160,6 +180,95 @@ pub(crate) enum Command {
 impl Command {
     pub async fn run(self) -> eyre::Result<()> {
         match self {
+            Command::Node {
+                mut opts,
+                l2_enabled,
+                based_enabled,
+                mut l2_opts,
+                based_opts,
+                subcommand,
+            } => {
+                opts.dev = true;
+                opts.datadir = String::from("memory");
+                opts.network = Some(String::from("./test_data/genesis-l1-dev.json"));
+
+                ethrex::initializers::init_tracing(&opts);
+
+                if let Some(subcommand) = subcommand {
+                    return subcommand.run(&opts);
+                }
+
+                let data_dir = ethrex::utils::set_datadir(&opts.datadir);
+
+                let network = ethrex::initializers::get_network(&opts);
+
+                let store = ethrex::initializers::init_store(&data_dir, &network);
+
+                let blockchain = ethrex::initializers::init_blockchain(opts.evm, store.clone());
+
+                let signer = ethrex::initializers::get_signer(&data_dir);
+
+                let local_p2p_node = ethrex::initializers::get_local_p2p_node(&opts, &signer);
+
+                let peer_table = ethrex_p2p::network::peer_table(signer.clone());
+
+                // TODO: Check every module starts properly.
+                let tracker = tokio_util::task::TaskTracker::new();
+
+                let cancel_token = tokio_util::sync::CancellationToken::new();
+
+                // ethrex CLI is designed to be compiled with different feature flags depending on the
+                // needs of the user (e.g. l2, based, dev). We do not care about conditional compilation
+                // on rex, hence we are importing ethrex with all features enabled. The drawback is that
+                // we loose the ability to know which features does rex user really need, that's why we
+                // added the `based_enabled`, and `l2_enabled` flags.
+                // In addition to the above context, ethrex with l2 feature enabled requires some options
+                // that are not present in most of the other features, that's why we need to override some
+                // opts from `l2_opts`.
+
+                if !l2_enabled && !based_enabled {
+                    let (random_private_key, _random_public_key) =
+                        secp256k1::generate_keypair(&mut secp256k1::rand::thread_rng());
+                    l2_opts.sponsor_private_key = Some(random_private_key)
+                }
+
+                ethrex::initializers::init_rpc_api(
+                    &opts,
+                    &based_opts,
+                    &l2_opts,
+                    &signer,
+                    peer_table.clone(),
+                    local_p2p_node,
+                    store.clone(),
+                    blockchain.clone(),
+                    cancel_token.clone(),
+                    tracker.clone(),
+                );
+
+                ethrex::initializers::init_metrics(&opts, tracker.clone());
+
+                if l2_enabled | based_enabled {
+                    println!("Starting L2 node...");
+                    let l2_sequencer = ethrex_l2::start_l2(store, blockchain).into_future();
+
+                    tracker.spawn(l2_sequencer);
+                } else {
+                    println!("Starting L1 node...");
+                    ethrex::initializers::init_dev_network(&opts, &store, tracker.clone());
+                }
+
+                tokio::select! {
+                    _ = tokio::signal::ctrl_c() => {
+                        info!("Server shut down started...");
+                        let peers_file = PathBuf::from(data_dir + "/peers.json");
+                        info!("Storing known peers at {peers_file:?}...");
+                        cancel_token.cancel();
+                        ethrex::utils::store_known_peers(peer_table, peers_file).await;
+                        tokio::time::sleep(Duration::from_secs(1)).await;
+                        info!("Server shutting down!");
+                    }
+                }
+            }
             Command::L2(cmd) => cmd.run().await?,
             Command::Autocomplete(cmd) => cmd.run()?,
             Command::Balance {

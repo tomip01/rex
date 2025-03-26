@@ -32,6 +32,9 @@ manual_saturating_arithmetic = "warn"
 rex-cli = { path = "cli" }
 rex-sdk = { path = "sdk" }
 
+ethrex = { git = "https://github.com/lambdaclass/ethrex", features = ["l2", "based", "dev"] }
+ethrex-vm = { git = "https://github.com/lambdaclass/ethrex", package = "ethrex-vm" }
+ethrex-p2p = { git = "https://github.com/lambdaclass/ethrex", package = "ethrex-p2p" }
 ethrex-l2 = { git = "https://github.com/lambdaclass/ethrex", package = "ethrex-l2" }
 ethrex-common = { git = "https://github.com/lambdaclass/ethrex", package = "ethrex-common" }
 ethrex-blockchain = { git = "https://github.com/lambdaclass/ethrex", package = "ethrex-blockchain" }
