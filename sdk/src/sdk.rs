@@ -18,12 +18,7 @@ pub async fn transfer(
     client: &EthClient,
     overrides: Overrides,
 ) -> Result<H256, EthClientError> {
-    println!(
-        "Transferring {amount} from {from:#x} to {to:#x}",
-        amount = amount,
-        from = from,
-        to = to
-    );
+    println!("Transferring {amount} from {from:#x} to {to:#x}");
     let tx = client
         .build_eip1559_transaction(to, from, Default::default(), overrides, 10)
         .await?;
