@@ -1,5 +1,5 @@
 use crate::commands::l2;
-use crate::utils::{parse_contract_creation, parse_func_call, parse_hex, parse_message};
+use crate::utils::{parse_contract_creation, parse_func_call, parse_hex};
 use crate::{
     commands::autocomplete,
     common::{CallArgs, DeployArgs, SendArgs, TransferArgs},
@@ -153,8 +153,8 @@ pub(crate) enum Command {
         private_key: SecretKey,
     },
     Signer {
-        #[arg(value_parser = parse_message)]
-        message: secp256k1::Message,
+        #[arg(value_parser = parse_hex)]
+        message: Bytes,
         #[arg(value_parser = parse_hex)]
         signature: Bytes,
     },
@@ -278,7 +278,16 @@ impl Command {
                     recovery_id,
                 )?;
 
-                let signer_public_key = signature.recover(&message)?;
+                let payload = [
+                    b"\x19Ethereum Signed Message:\n",
+                    message.len().to_string().as_bytes(),
+                    message.as_ref(),
+                ]
+                .concat();
+
+                let signer_public_key = signature.recover(&secp256k1::Message::from_digest(
+                    *keccak(payload).as_fixed_bytes(),
+                ))?;
 
                 let signer =
                     hex::encode(&keccak(&signer_public_key.serialize_uncompressed()[1..])[12..]);
@@ -327,7 +336,7 @@ impl Command {
 
                 let client = EthClient::new(&rpc_url);
 
-                let calldata = if args.calldata.len() > 0 {
+                let calldata = if !args.calldata.is_empty() {
                     args.calldata
                 } else {
                     parse_func_call(args._args)?
@@ -369,7 +378,7 @@ impl Command {
 
                 let client = EthClient::new(&rpc_url);
 
-                let calldata = if args.calldata.len() > 0 {
+                let calldata = if !args.calldata.is_empty() {
                     args.calldata
                 } else {
                     parse_func_call(args._args)?

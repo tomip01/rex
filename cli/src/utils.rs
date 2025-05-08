@@ -1,4 +1,4 @@
-use ethrex_common::{Address, Bytes, H256, U256};
+use ethrex_common::{Address, Bytes, U256};
 use hex::FromHexError;
 use rex_sdk::calldata::{Value, encode_calldata, encode_tuple, parse_signature};
 use secp256k1::SecretKey;
@@ -6,16 +6,6 @@ use std::str::FromStr;
 
 pub fn parse_private_key(s: &str) -> eyre::Result<SecretKey> {
     Ok(SecretKey::from_slice(&parse_hex(s)?)?)
-}
-
-pub fn parse_message(s: &str) -> eyre::Result<secp256k1::Message> {
-    let parsed = secp256k1::Message::from_digest(*parse_h256(s)?.as_fixed_bytes());
-    Ok(parsed)
-}
-
-pub fn parse_h256(s: &str) -> eyre::Result<H256> {
-    let parsed = H256::from_slice(&parse_hex(s)?);
-    Ok(parsed)
 }
 
 pub fn parse_u256(s: &str) -> eyre::Result<U256> {
@@ -39,25 +29,25 @@ fn parse_call_args(args: Vec<String>) -> eyre::Result<Option<(String, Vec<Value>
     let Some(signature) = args_iter.next() else {
         return Ok(None);
     };
-    let (_, params) = parse_signature(&signature)?;
+    let (_, params) = parse_signature(signature)?;
     let mut values = Vec::new();
     for param in params {
         let val = args_iter
             .next()
             .ok_or(eyre::Error::msg("missing parameter for given signature"))?;
         values.push(match param.as_str() {
-            "address" => Value::Address(Address::from_str(&val)?),
-            _ if param.starts_with("uint") => Value::Uint(U256::from_dec_str(&val)?),
+            "address" => Value::Address(Address::from_str(val)?),
+            _ if param.starts_with("uint") => Value::Uint(U256::from_dec_str(val)?),
             _ if param.starts_with("int") => {
-                if val.starts_with("-") {
-                    let x = U256::from_dec_str(&val[1..])?;
+                if let Some(val) = val.strip_prefix("-") {
+                    let x = U256::from_str(val)?;
                     if x.is_zero() {
                         Value::Uint(x)
                     } else {
                         Value::Uint(U256::max_value() - x + 1)
                     }
                 } else {
-                    Value::Uint(U256::from_dec_str(&val)?)
+                    Value::Uint(U256::from_dec_str(val)?)
                 }
             }
             "bool" => match val.as_str() {
@@ -65,8 +55,8 @@ fn parse_call_args(args: Vec<String>) -> eyre::Result<Option<(String, Vec<Value>
                 "false" => Value::Uint(U256::from(0)),
                 _ => Err(eyre::Error::msg("Invalid boolean"))?,
             },
-            "bytes" => Value::Bytes(hex::decode(&val)?.into()),
-            _ if param.starts_with("bytes") => Value::FixedBytes(hex::decode(&val)?.into()),
+            "bytes" => Value::Bytes(hex::decode(val)?.into()),
+            _ if param.starts_with("bytes") => Value::FixedBytes(hex::decode(val)?.into()),
             _ => todo!("type unsupported"),
         });
     }
