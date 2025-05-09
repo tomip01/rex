@@ -10,7 +10,10 @@ use ethrex_common::{Address, Bytes, H256, H520};
 use keccak_hash::keccak;
 use rex_sdk::{
     balance_in_eth,
-    client::{EthClient, Overrides, eth::get_address_from_secret_key},
+    client::{
+        EthClient, Overrides,
+        eth::{get_address_from_message_and_signature, get_address_from_secret_key},
+    },
     transfer, wait_for_transaction_receipt,
 };
 use secp256k1::{Message, SecretKey};
@@ -171,6 +174,14 @@ pub(crate) enum Command {
         #[arg(default_value = "http://localhost:8545", env = "RPC_URL")]
         rpc_url: String,
     },
+    #[clap(about = "Verify if the signature of a message was made by an account")]
+    VerifySignature {
+        #[arg(value_parser = parse_hex)]
+        message: Bytes,
+        #[arg(value_parser = parse_hex)]
+        signature: Bytes,
+        address: Address,
+    },
 }
 
 impl Command {
@@ -265,34 +276,9 @@ impl Command {
                 println!("{hash:#x}");
             }
             Command::Signer { message, signature } => {
-                let raw_recovery_id = if signature[64] >= 27 {
-                    signature[64] - 27
-                } else {
-                    signature[64]
-                };
+                let signer = get_address_from_message_and_signature(message, signature)?;
 
-                let recovery_id = secp256k1::ecdsa::RecoveryId::from_i32(raw_recovery_id as i32)?;
-
-                let signature = secp256k1::ecdsa::RecoverableSignature::from_compact(
-                    &signature[..64],
-                    recovery_id,
-                )?;
-
-                let payload = [
-                    b"\x19Ethereum Signed Message:\n",
-                    message.len().to_string().as_bytes(),
-                    message.as_ref(),
-                ]
-                .concat();
-
-                let signer_public_key = signature.recover(&secp256k1::Message::from_digest(
-                    *keccak(payload).as_fixed_bytes(),
-                ))?;
-
-                let signer =
-                    hex::encode(&keccak(&signer_public_key.serialize_uncompressed()[1..])[12..]);
-
-                println!("0x{signer}");
+                println!("{signer:x?}");
             }
             Command::Transfer { args, rpc_url } => {
                 if args.token_address.is_some() {
@@ -491,6 +477,16 @@ impl Command {
                     [&msg_signature[..], &[msg_signature_recovery_id as u8]].concat();
 
                 println!("0x{:x}", H520::from_slice(&encoded_signature));
+            }
+            Command::VerifySignature {
+                message,
+                signature,
+                address,
+            } => {
+                println!(
+                    "{}",
+                    get_address_from_message_and_signature(message, signature)? == address
+                );
             }
         };
         Ok(())
