@@ -70,6 +70,13 @@ pub(crate) enum Command {
             help = "Send the request asynchronously."
         )]
         cast: bool,
+        #[clap(
+            long,
+            short = 's',
+            required = false,
+            help = "Display only the tx hash."
+        )]
+        silent: bool,
         #[arg(value_parser = parse_private_key, env = "PRIVATE_KEY")]
         private_key: SecretKey,
         #[arg(env = "BRIDGE_ADDRESS")]
@@ -113,6 +120,13 @@ pub(crate) enum Command {
             help = "Send the request asynchronously."
         )]
         cast: bool,
+        #[clap(
+            long,
+            short = 's',
+            required = false,
+            help = "Display only the tx hash."
+        )]
+        silent: bool,
         #[clap(
             long,
             short = 'e',
@@ -197,6 +211,13 @@ pub(crate) enum Command {
         cast: bool,
         #[clap(
             long,
+            short = 's',
+            required = false,
+            help = "Display only the tx hash."
+        )]
+        silent: bool,
+        #[clap(
+            long,
             required = false,
             help = "Display transaction URL in the explorer."
         )]
@@ -230,6 +251,7 @@ impl Command {
                 token_address,
                 to,
                 cast,
+                silent,
                 explorer_url,
                 private_key,
                 l1_rpc_url,
@@ -268,12 +290,13 @@ impl Command {
                 println!("Deposit sent: {tx_hash:#x}");
 
                 if !cast {
-                    wait_for_transaction_receipt(tx_hash, &eth_client, 100, false).await?;
+                    wait_for_transaction_receipt(tx_hash, &eth_client, 100, silent).await?;
                 }
             }
             Command::ClaimWithdraw {
                 l2_withdrawal_tx_hash,
                 cast,
+                silent,
                 private_key,
                 l1_rpc_url,
                 rpc_url,
@@ -299,7 +322,7 @@ impl Command {
                 println!("Withdrawal claim sent: {tx_hash:#x}");
 
                 if !cast {
-                    wait_for_transaction_receipt(tx_hash, &eth_client, 100, false).await?;
+                    wait_for_transaction_receipt(tx_hash, &eth_client, 100, silent).await?;
                 }
             }
             Command::Withdraw {
@@ -307,6 +330,7 @@ impl Command {
                 nonce,
                 token_address,
                 cast,
+                silent,
                 explorer_url,
                 private_key,
                 rpc_url,
@@ -328,7 +352,7 @@ impl Command {
                 println!("Withdrawal sent: {tx_hash:#x}");
 
                 if !cast {
-                    wait_for_transaction_receipt(tx_hash, &client, 100, false).await?;
+                    wait_for_transaction_receipt(tx_hash, &client, 100, silent).await?;
                 }
             }
             Command::WithdrawalProof {
