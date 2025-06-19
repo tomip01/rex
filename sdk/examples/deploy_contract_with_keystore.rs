@@ -1,5 +1,5 @@
-use ethers::utils::hex;
 use ethrex_common::{Bytes, H256, U256};
+use rex_sdk::calldata::{Value, encode_calldata};
 use rex_sdk::client::eth::get_address_from_secret_key;
 use rex_sdk::client::{EthClient, Overrides};
 use rex_sdk::{
@@ -88,19 +88,26 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let from_block = eth_client.get_block_number().await?;
 
     // Prepare the calldata to call the contract function that emits a log.
-    let function_selector =
-        &ethers::utils::keccak256("recoverSigner(bytes32,bytes)".as_bytes())[..4];
 
     let message = H256::random();
     let signature = sign_hash(message, secret_key);
 
-    let encoded_params = ethers::abi::encode(&[
-        ethers::abi::Token::FixedBytes(message.as_bytes().to_vec()),
-        ethers::abi::Token::Bytes(signature),
-    ]);
+    // let encoded_params = ethers::abi::encode(&[
+    //     ethers::abi::Token::FixedBytes(message.to_vec()),
+    //     ethers::abi::Token::Bytes(signature),
+    // ]);
 
-    let mut calldata = function_selector.to_vec();
-    calldata.extend_from_slice(&encoded_params);
+    // let mut calldata = function_selector.to_vec();
+    // calldata.extend_from_slice(&encoded_params);
+
+    let raw_function_signature = "recoverSigner(bytes32,bytes)";
+
+    let arguments = vec![
+        Value::FixedBytes(Bytes::from(message.to_fixed_bytes().to_vec())),
+        Value::Bytes(Bytes::from(signature)),
+    ];
+
+    let calldata = encode_calldata(raw_function_signature, &arguments).unwrap();
 
     // Call the contract signing with the private key and wait for its receipt.
     let response = eth_client
