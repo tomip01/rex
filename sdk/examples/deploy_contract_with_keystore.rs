@@ -8,8 +8,8 @@ use rex_sdk::{
     transfer, wait_for_transaction_receipt,
 };
 use secp256k1::SecretKey;
+use std::fs::read_to_string;
 use std::str::FromStr;
-
 const RPC_URL: &str = "http://127.0.0.1:8545";
 const RICH_WALLET_PK: &str = "5d2344259f42259f82d2c140aa66102ba89b57b4883ee441a8b312622bd42491";
 
@@ -60,11 +60,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Deploy a contract.
     let nonce = eth_client.get_nonce(new_address).await.unwrap();
+
+    let bytecode = hex::decode(read_to_string(
+        "examples/contracts/solc_out/RecoverSigner.bin",
+    )?)?;
+
     let (contract_tx_hash, deployed_address) = eth_client
         .deploy(
             new_address,
             secret_key,
-            get_contract_code()?,
+            Bytes::from(bytecode),
             Overrides {
                 value: Some(U256::from_dec_str("2000000000")?),
                 nonce: Some(nonce),
