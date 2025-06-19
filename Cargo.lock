@@ -4955,6 +4955,7 @@ dependencies = [
  "itertools 0.14.0",
  "keccak-hash",
  "log",
+ "rand 0.9.1",
  "rex-sdk",
  "secp256k1",
  "serde",
