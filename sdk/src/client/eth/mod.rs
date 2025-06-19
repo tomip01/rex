@@ -110,7 +110,7 @@ impl EthClient {
         tx: &EIP1559Transaction,
         private_key: &SecretKey,
     ) -> Result<H256, EthClientError> {
-        let signed_tx = tx.sign(private_key);
+        let signed_tx = tx.sign(private_key)?;
 
         let mut encoded_tx = signed_tx.encode_to_vec();
         encoded_tx.insert(0, TxType::EIP1559.into());
@@ -124,7 +124,7 @@ impl EthClient {
         private_key: &SecretKey,
     ) -> Result<H256, EthClientError> {
         let mut wrapped_tx = wrapped_tx.clone();
-        wrapped_tx.tx.sign_inplace(private_key);
+        wrapped_tx.tx.sign_inplace(private_key)?;
 
         let mut encoded_tx = wrapped_tx.encode_to_vec();
         encoded_tx.insert(0, TxType::EIP4844.into());
