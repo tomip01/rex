@@ -22,6 +22,7 @@ keccak-hash.workspace = true
 secp256k1.workspace = true
 eth-keystore = "0.5"
 rand = "0.8.5"
+ethers = "2.0"
 
 # Utils
 hex.workspace = true
@@ -51,3 +52,8 @@ path = "./src/sdk.rs"
 [[example]]
 name = "simple_usage"
 path = "./examples/simple_usage.rs"
+
+
+[[example]]
+name = "deploy_contract_with_keystore"
+path = "./examples/deploy_contract_with_keystore.rs"
