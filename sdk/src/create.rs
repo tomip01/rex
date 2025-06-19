@@ -2,6 +2,9 @@ use ethrex_common::Address;
 use ethrex_rlp::encode::RLPEncode;
 use keccak_hash::{H256, keccak};
 use rand::RngCore;
+use rayon::prelude::*;
+use std::iter;
+use std::sync::Arc;
 
 use crate::utils::to_checksum_address;
 
@@ -79,6 +82,47 @@ pub fn brute_force_create2(
             return (salt, candidate_address);
         }
     }
+}
+
+pub fn brute_force_create2_rayon(
+    deployer: Address,
+    init_code_hash: H256,
+    begins: Option<String>,
+    ends: Option<String>,
+    contains: Option<String>,
+    case_sensitive: bool,
+) -> (H256, Address) {
+    let begins = Arc::new(begins.map(|s| if case_sensitive { s } else { s.to_lowercase() }));
+    let ends = Arc::new(ends.map(|s| if case_sensitive { s } else { s.to_lowercase() }));
+    let contains = Arc::new(contains.map(|s| if case_sensitive { s } else { s.to_lowercase() }));
+
+    iter::repeat_with(|| {
+        let mut salt_bytes = [0u8; 32];
+        rand::thread_rng().fill_bytes(&mut salt_bytes);
+        H256::from(salt_bytes)
+    })
+    .par_bridge() // Convert into a parallel iterator
+    .find_any(|salt| {
+        // Find a salt that satisfies the criteria set by the user.
+        let addr = compute_create2_address(deployer, init_code_hash, *salt);
+
+        let addr_str = if !case_sensitive {
+            format!("{addr:x}")
+        } else {
+            to_checksum_address(&format!("{addr:x}"))
+        };
+
+        let matches_begins = begins.as_deref().map_or(true, |b| addr_str.starts_with(b));
+        let matches_ends = ends.as_deref().map_or(true, |e| addr_str.ends_with(&e));
+        let matches_contains = contains.as_deref().map_or(true, |c| addr_str.contains(&c));
+
+        matches_begins && matches_ends && matches_contains
+    })
+    .map(|salt| {
+        let addr = compute_create2_address(deployer, init_code_hash, salt);
+        (salt, addr)
+    })
+    .expect("should eventually find a match")
 }
 
 #[test]

@@ -10,7 +10,8 @@ use ethrex_common::{Address, Bytes, H256, H520};
 use keccak_hash::keccak;
 use rex_sdk::calldata::{Value, decode_calldata};
 use rex_sdk::create::{
-    DETERMINISTIC_DEPLOYER, brute_force_create2, compute_create_address, compute_create2_address,
+    DETERMINISTIC_DEPLOYER, brute_force_create2_rayon, compute_create_address,
+    compute_create2_address,
 };
 use rex_sdk::sign::{get_address_from_message_and_signature, sign_hash};
 use rex_sdk::utils::to_checksum_address;
@@ -172,6 +173,13 @@ pub(crate) enum Command {
             conflicts_with_all = ["salt"],
         )]
         case_sensitive: bool,
+        #[arg(
+            long,
+            help = "Number of threads to use for brute-forcing. Defaults to the number of logical CPUs.",
+            default_value_t = rayon::current_num_threads(),
+            conflicts_with_all = ["salt"],
+        )]
+        threads: usize,
     },
     #[clap(about = "Deploy a contract")]
     Deploy {
@@ -315,6 +323,7 @@ impl Command {
                 ends,
                 contains,
                 case_sensitive,
+                threads,
             } => {
                 let init_code_hash = init_code_hash
                     .or_else(|| init_code.as_ref().map(keccak))
@@ -328,10 +337,11 @@ impl Command {
                     }
                     None => {
                         // If salt is not provided, search for a salt that matches the criteria set by the user.
-                        print!("\nComputing Create2 Address...");
+                        println!("\nComputing Create2 Address with {threads} threads...");
                         io::stdout().flush().ok();
+
                         let start = std::time::Instant::now();
-                        let (salt, contract_address) = brute_force_create2(
+                        let (salt, contract_address) = brute_force_create2_rayon(
                             deployer,
                             init_code_hash,
                             begins,
@@ -340,7 +350,7 @@ impl Command {
                             case_sensitive,
                         );
                         let duration = start.elapsed();
-                        println!(" Generated in: {:.2?}.", duration);
+                        println!("Generated in: {:.2?}.", duration);
                         (salt, contract_address)
                     }
                 };
