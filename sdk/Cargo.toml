@@ -55,5 +55,5 @@ path = "./examples/simple_usage.rs"
 
 
 [[example]]
-name = "deploy_contract_with_keystore"
-path = "./examples/deploy_contract_with_keystore.rs"
+name = "keystore"
+path = "./examples/keystore/main.rs"
