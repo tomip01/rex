@@ -88,17 +88,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let from_block = eth_client.get_block_number().await?;
 
     // Prepare the calldata to call the contract function that emits a log.
-
     let message = H256::random();
     let signature = sign_hash(message, secret_key);
-
-    // let encoded_params = ethers::abi::encode(&[
-    //     ethers::abi::Token::FixedBytes(message.to_vec()),
-    //     ethers::abi::Token::Bytes(signature),
-    // ]);
-
-    // let mut calldata = function_selector.to_vec();
-    // calldata.extend_from_slice(&encoded_params);
 
     let raw_function_signature = "recoverSigner(bytes32,bytes)";
 
