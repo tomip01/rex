@@ -72,10 +72,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             secret_key,
             get_contract_code()?,
             Overrides {
-                value: Some(U256::from_dec_str("2000000")?),
+                value: Some(U256::from_dec_str("2000000000")?),
                 nonce: Some(get_timestamp_nonce()),
                 chain_id: Some(9),
-                gas_limit: Some(200000000),
+                gas_limit: Some(2000000),
                 max_fee_per_gas: Some(2000000),
                 max_priority_fee_per_gas: Some(2000000),
                 ..Default::default()
