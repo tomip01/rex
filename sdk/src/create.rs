@@ -74,9 +74,9 @@ pub fn brute_force_create2(
         };
 
         // Validate that address satisfies the requirements given by the user.
-        let matches_begins = begins.as_ref().map_or(true, |b| addr_str.starts_with(b));
-        let matches_ends = ends.as_ref().map_or(true, |e| addr_str.ends_with(e));
-        let matches_contains = contains.as_ref().map_or(true, |c| addr_str.contains(c));
+        let matches_begins = begins.as_ref().is_none_or(|b| addr_str.starts_with(b));
+        let matches_ends = ends.as_ref().is_none_or(|e| addr_str.ends_with(e));
+        let matches_contains = contains.as_ref().is_none_or(|c| addr_str.contains(c));
 
         if matches_begins && matches_ends && matches_contains {
             return (salt, candidate_address);
@@ -112,9 +112,9 @@ pub fn brute_force_create2_rayon(
             to_checksum_address(&format!("{addr:x}"))
         };
 
-        let matches_begins = begins.as_deref().map_or(true, |b| addr_str.starts_with(b));
-        let matches_ends = ends.as_deref().map_or(true, |e| addr_str.ends_with(&e));
-        let matches_contains = contains.as_deref().map_or(true, |c| addr_str.contains(&c));
+        let matches_begins = begins.as_deref().is_none_or(|b| addr_str.starts_with(b));
+        let matches_ends = ends.as_deref().is_none_or(|e| addr_str.ends_with(&e));
+        let matches_contains = contains.as_deref().is_none_or(|c| addr_str.contains(c));
 
         matches_begins && matches_ends && matches_contains
     })
