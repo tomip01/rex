@@ -93,24 +93,34 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let calldata = encode_calldata(raw_function_signature, &arguments).unwrap();
 
-    // Call the contract signing with the private key and wait for its receipt.
-    let response = eth_client
-        .call(
+    let tx = eth_client
+        .build_eip1559_transaction(
             deployed_address,
-            Bytes::from(calldata),
+            keystore_address,
+            calldata.into(),
             Overrides {
                 value: Some(U256::from_dec_str("0")?),
-                nonce: Some(0),
+                nonce: Some(1),
                 chain_id: Some(9),
                 gas_limit: Some(2000000),
                 max_fee_per_gas: Some(2000000),
                 max_priority_fee_per_gas: Some(20000),
                 ..Default::default()
             },
+            10,
         )
         .await?;
 
-    println!("Call response: {response}");
+    let sent_tx_hash = eth_client
+        .send_eip1559_transaction(&tx, &keystore_secret_key)
+        .await?;
+
+    println!("Tx hash: {sent_tx_hash}");
+
+    let sent_tx_receipt =
+        wait_for_transaction_receipt(sent_tx_hash, &eth_client, 100, true).await?;
+    println!("Tx receipt: {sent_tx_receipt:?}");
+
     // Get the new current block.
     let to_block = eth_client.get_block_number().await?;
 
@@ -120,11 +130,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             from_block,
             to_block,
             deployed_address,
-            "recoverSigner(bytes32,bytes)",
+            "RecoveredSigner(address)",
         )
         .await?;
 
-    println!("Logs: {:?}", logs);
+    println!("Tx Logs: {:?}", logs);
 
     Ok(())
 }
