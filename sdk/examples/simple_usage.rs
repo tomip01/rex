@@ -12,7 +12,7 @@ use std::str::FromStr;
 struct SimpleUsageArgs {
     #[arg(long, value_parser = parse_private_key, env = "PRIVATE_KEY", help = "The private key to derive the address from.")]
     private_key: SecretKey,
-    #[arg(default_value = "http://localhost:8545", env = "RPC_URL")]
+    #[arg(long, default_value = "http://localhost:8545", env = "RPC_URL")]
     rpc_url: String,
 }
 

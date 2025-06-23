@@ -19,7 +19,7 @@ const RICH_WALLET_PK: &str = "5d2344259f42259f82d2c140aa66102ba89b57b4883ee441a8
 
 #[derive(Parser)]
 struct ExampleArgs {
-    #[arg(default_value = "http://localhost:8545", env = "RPC_URL")]
+    #[arg(long, default_value = "http://localhost:8545", env = "RPC_URL")]
     rpc_url: String,
 }
 
