@@ -12,6 +12,7 @@ use std::fs::read_to_string;
 use std::path::PathBuf;
 use std::process::Command;
 use std::str::FromStr;
+
 const RPC_URL: &str = "http://127.0.0.1:8545";
 const RICH_WALLET_PK: &str = "5d2344259f42259f82d2c140aa66102ba89b57b4883ee441a8b312622bd42491";
 
@@ -27,12 +28,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let keystore_secret_key = load_keystore_from_path(None, "ContractKeystore", "LambdaClass")?;
     let keystore_address = get_address_from_secret_key(&keystore_secret_key)?;
 
-    println!("Keystore loaded successfully:");
+    println!("\nKeystore loaded successfully:");
     println!(
-        "Private Key: 0x{}",
+        "\tPrivate Key: 0x{}",
         hex::encode(keystore_secret_key.secret_bytes())
     );
-    println!("Address: {keystore_address:#x}");
+    println!("\tAddress: {keystore_address:#x}");
 
     // Connect the client to a node
     let eth_client = EthClient::new(RPC_URL);
@@ -51,9 +52,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     )
     .await?;
 
-    println!("Transfer tx hash: {transfer_tx_hash:#x}");
+    let transfer_receipt =
+        wait_for_transaction_receipt(transfer_tx_hash, &eth_client, 10, true).await?;
 
-    wait_for_transaction_receipt(transfer_tx_hash, &eth_client, 10, true).await?;
+    println!("\nFunds transferred successfully:");
+    println!("\tTransfer tx hash: {transfer_tx_hash:#x}");
+    println!("\tTransfer receipt: {transfer_receipt:?}");
 
     // Deploy a contract.
     let bytecode_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -69,13 +73,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         .await?;
 
-    println!("Contract deployment tx hash: {contract_tx_hash:#x}");
-
-    println!("Contract deployment address: {deployed_address:#x}");
-
     let contract_deploy_receipt =
         wait_for_transaction_receipt(contract_tx_hash, &eth_client, 10, true).await?;
-    println!("Contract deployment receipt: {contract_deploy_receipt:?}");
+
+    println!("\nContract deployed successfully:");
+    println!("\tContract deployment tx hash: {contract_tx_hash:#x}");
+    println!("\tContract deployment address: {deployed_address:#x}");
+    println!("\tContract deployment receipt: {contract_deploy_receipt:?}");
 
     // Get the current block (for later).
     let from_block = eth_client.get_block_number().await?;
@@ -85,12 +89,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let signature = sign_hash(message, keystore_secret_key);
 
     let raw_function_signature = "recoverSigner(bytes32,bytes)";
-
     let arguments = vec![
         Value::FixedBytes(Bytes::from(message.to_fixed_bytes().to_vec())),
         Value::Bytes(Bytes::from(signature)),
     ];
-
     let calldata = encode_calldata(raw_function_signature, &arguments).unwrap();
 
     let tx = eth_client
@@ -115,11 +117,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .send_eip1559_transaction(&tx, &keystore_secret_key)
         .await?;
 
-    println!("Tx hash: {sent_tx_hash}");
-
     let sent_tx_receipt =
         wait_for_transaction_receipt(sent_tx_hash, &eth_client, 100, true).await?;
-    println!("Tx receipt: {sent_tx_receipt:?}");
+
+    println!("\nTx sent successfully:");
+    println!("\tTx hash: {sent_tx_hash:#x}");
+    println!("\tTx receipt: {sent_tx_receipt:?}");
 
     // Get the new current block.
     let to_block = eth_client.get_block_number().await?;
@@ -134,7 +137,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         .await?;
 
-    println!("Tx Logs: {:?}", logs);
+    println!("\tTx Logs: {:?}", logs);
 
     Ok(())
 }
