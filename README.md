@@ -261,7 +261,7 @@ async fn main() {
 ```Shell
 cd sdk
 cargo run --release --example simple_usage -- --private-key <PRIVATE_KEY> --rpc-url <RPC_URL>
-cargo run --release --example keystore -- --rpc-url <RPC_URL>
+cargo run --release --example keystore -- --private-key <PRIVATE_KEY> --rpc-url <RPC_URL>
 ```
 
 > [!NOTE]
