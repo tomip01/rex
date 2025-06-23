@@ -1,5 +1,6 @@
 use clap::Parser;
-use ethrex_common::{Bytes, H256, U256};
+use ethrex_common::{Bytes, H160, H256, U256};
+use keccak_hash::keccak;
 use rex_sdk::calldata::{Value, encode_calldata};
 use rex_sdk::client::eth::get_address_from_secret_key;
 use rex_sdk::client::{EthClient, Overrides};
@@ -8,7 +9,6 @@ use rex_sdk::{
     sign::sign_hash,
     transfer, wait_for_transaction_receipt,
 };
-
 use secp256k1::SecretKey;
 use std::fs::read_to_string;
 use std::path::PathBuf;
@@ -95,7 +95,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Prepare the calldata to call the contract function that emits a log.
     let message = H256::random();
-    let signature = sign_hash(message, keystore_secret_key);
+    let prefix = "\x19Ethereum Signed Message:\n32";
+    let mut hash_input = Vec::new();
+    hash_input.extend_from_slice(prefix.as_bytes());
+    hash_input.extend_from_slice(message.as_bytes());
+    let hash = keccak(&hash_input);
+
+    let signature = sign_hash(hash, keystore_secret_key);
 
     let raw_function_signature = "recoverSigner(bytes32,bytes)";
     let arguments = vec![
@@ -147,6 +153,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .await?;
 
     println!("\tTx Logs: {:?}", logs);
+
+    let address_bytes = &logs[0].log.data[logs[0].log.data.len() - 20..];
+    let recovered_address = H160::from_str(&hex::encode(address_bytes))?;
+    assert_eq!(recovered_address, keystore_address);
+
+    println!("\nAddress recovered successfully!");
+    println!("\tRecovered address: {recovered_address:#x}");
 
     Ok(())
 }
