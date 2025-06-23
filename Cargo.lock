@@ -4977,7 +4977,6 @@ dependencies = [
  "dirs 6.0.0",
  "envy",
  "eth-keystore",
- "ethers",
  "ethrex-blockchain",
  "ethrex-common",
  "ethrex-l2",

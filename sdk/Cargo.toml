@@ -22,7 +22,6 @@ keccak-hash.workspace = true
 secp256k1.workspace = true
 eth-keystore = "0.5"
 rand = "0.8.5"
-ethers = "2.0"
 
 # Utils
 hex.workspace = true
