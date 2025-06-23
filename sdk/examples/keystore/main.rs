@@ -15,10 +15,15 @@ use std::path::PathBuf;
 use std::process::Command;
 use std::str::FromStr;
 
-const RICH_WALLET_PK: &str = "5d2344259f42259f82d2c140aa66102ba89b57b4883ee441a8b312622bd42491";
-
 #[derive(Parser)]
 struct ExampleArgs {
+    #[arg(
+        long,
+        default_value = "5d2344259f42259f82d2c140aa66102ba89b57b4883ee441a8b312622bd42491",
+        env = "PRIVATE_KEY",
+        help = "The private key to derive the address from."
+    )]
+    private_key: String,
     #[arg(long, default_value = "http://localhost:8545", env = "RPC_URL")]
     rpc_url: String,
 }
@@ -27,14 +32,14 @@ struct ExampleArgs {
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = ExampleArgs::parse();
 
-    // Download contract deps and compile contract.
+    // 1. Download contract deps and compile contract.
     setup();
 
-    // Create a keystore.
-    create_new_keystore(None, Some("ContractKeystore"), "LambdaClass")?;
+    // 2. Create a new keystore named "RexTest" in the "ContractKeystores" directory.
+    create_new_keystore(None, Some("RexTest"), "LambdaClass")?;
 
-    // Load the secret key from the keystore.
-    let keystore_secret_key = load_keystore_from_path(None, "ContractKeystore", "LambdaClass")?;
+    // 3. Load the keystore with the password.
+    let keystore_secret_key = load_keystore_from_path(None, "RexTest", "LambdaClass")?;
     let keystore_address = get_address_from_secret_key(&keystore_secret_key)?;
 
     println!("\nKeystore loaded successfully:");
@@ -47,8 +52,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Connect the client to a node
     let eth_client = EthClient::new(&args.rpc_url);
 
-    // Transfer funds from a rich wallet to the keystore's account
-    let rich_wallet_pk = SecretKey::from_str(RICH_WALLET_PK)?;
+    // 4. Fund the keystore account.
+    let rich_wallet_pk = SecretKey::from_str(&args.private_key)?;
     let rich_wallet_address = get_address_from_secret_key(&rich_wallet_pk)?;
     let amount = U256::from_dec_str("1000000000000000000").expect("Failed to parse amount");
     let transfer_tx_hash = transfer(
@@ -68,7 +73,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("\tTransfer tx hash: {transfer_tx_hash:#x}");
     println!("\tTransfer receipt: {transfer_receipt:?}");
 
-    // Deploy a contract.
+    // 5. Deploy the signer recovery example contract with the keystore account.
     let bytecode_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("examples/keystore/contracts/solc_out")
         .join("RecoverSigner.bin");
@@ -93,7 +98,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Get the current block (for later).
     let from_block = eth_client.get_block_number().await?;
 
-    // Prepare the calldata to call the contract function that emits a log.
+    // 6. Prepare the calldata to call the example contract.
+    // i. Prepare a message.
     let message = H256::random();
     let prefix = "\x19Ethereum Signed Message:\n32";
     let mut hash_input = Vec::new();
@@ -101,8 +107,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     hash_input.extend_from_slice(message.as_bytes());
     let hash = keccak(&hash_input);
 
+    // ii. Sign the hash of the message with the keystore private key.
     let signature = sign_hash(hash, keystore_secret_key);
 
+    // iii. ABI-encode the parameters.
     let raw_function_signature = "recoverSigner(bytes32,bytes)";
     let arguments = vec![
         Value::FixedBytes(Bytes::from(message.to_fixed_bytes().to_vec())),
@@ -110,6 +118,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     ];
     let calldata = encode_calldata(raw_function_signature, &arguments).unwrap();
 
+    // 7. Prepare and send the transaction for calling the example contract.
     let tx = eth_client
         .build_eip1559_transaction(
             deployed_address,
@@ -142,7 +151,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Get the new current block.
     let to_block = eth_client.get_block_number().await?;
 
-    // Get the emitted logs using the current block and the previous current block.
+    // 8. Get the log emitted by the contract call execution.
     let logs = eth_client
         .get_logs_from_signature(
             from_block,
@@ -154,6 +163,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("\tTx Logs: {:?}", logs);
 
+    // 9. Compare it with the expected one.
     let address_bytes = &logs[0].log.data[logs[0].log.data.len() - 20..];
     let recovered_address = H160::from_str(&hex::encode(address_bytes))?;
     assert_eq!(recovered_address, keystore_address);
