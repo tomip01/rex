@@ -1,2 +1,2 @@
-examples/keystore/lib
-examples/keystore/solc_out
+examples/keystore/contracts/lib
+examples/keystore/contracts/solc_out
