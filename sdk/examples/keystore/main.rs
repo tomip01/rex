@@ -1,3 +1,4 @@
+use clap::Parser;
 use ethrex_common::{Bytes, H256, U256};
 use rex_sdk::calldata::{Value, encode_calldata};
 use rex_sdk::client::eth::get_address_from_secret_key;
@@ -7,17 +8,25 @@ use rex_sdk::{
     sign::sign_hash,
     transfer, wait_for_transaction_receipt,
 };
+
 use secp256k1::SecretKey;
 use std::fs::read_to_string;
 use std::path::PathBuf;
 use std::process::Command;
 use std::str::FromStr;
 
-const RPC_URL: &str = "http://127.0.0.1:8545";
 const RICH_WALLET_PK: &str = "5d2344259f42259f82d2c140aa66102ba89b57b4883ee441a8b312622bd42491";
+
+#[derive(Parser)]
+struct ExampleArgs {
+    #[arg(default_value = "http://localhost:8545", env = "RPC_URL")]
+    rpc_url: String,
+}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let args = ExampleArgs::parse();
+
     // Download contract deps and compile contract.
     setup();
 
@@ -36,7 +45,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("\tAddress: {keystore_address:#x}");
 
     // Connect the client to a node
-    let eth_client = EthClient::new(RPC_URL);
+    let eth_client = EthClient::new(&args.rpc_url);
 
     // Transfer funds from a rich wallet to the keystore's account
     let rich_wallet_pk = SecretKey::from_str(RICH_WALLET_PK)?;
