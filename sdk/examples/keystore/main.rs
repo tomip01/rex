@@ -10,7 +10,7 @@ use rex_sdk::{
 use secp256k1::SecretKey;
 use std::fs::read_to_string;
 use std::path::PathBuf;
-use std::process::{Command, ExitStatus};
+use std::process::Command;
 use std::str::FromStr;
 const RPC_URL: &str = "http://127.0.0.1:8545";
 const RICH_WALLET_PK: &str = "5d2344259f42259f82d2c140aa66102ba89b57b4883ee441a8b312622bd42491";
@@ -73,58 +73,58 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("Contract deployment address: {deployed_address:#x}");
 
-    // let contract_deploy_receipt =
-    //     wait_for_transaction_receipt(contract_tx_hash, &eth_client, 10, true).await?;
-    // println!("Contract deployment receipt: {contract_deploy_receipt:?}");
+    let contract_deploy_receipt =
+        wait_for_transaction_receipt(contract_tx_hash, &eth_client, 10, true).await?;
+    println!("Contract deployment receipt: {contract_deploy_receipt:?}");
 
-    // // Get the current block (for later).
-    // let from_block = eth_client.get_block_number().await?;
+    // Get the current block (for later).
+    let from_block = eth_client.get_block_number().await?;
 
-    // // Prepare the calldata to call the contract function that emits a log.
-    // let message = H256::random();
-    // let signature = sign_hash(message, secret_key);
+    // Prepare the calldata to call the contract function that emits a log.
+    let message = H256::random();
+    let signature = sign_hash(message, keystore_secret_key);
 
-    // let raw_function_signature = "recoverSigner(bytes32,bytes)";
+    let raw_function_signature = "recoverSigner(bytes32,bytes)";
 
-    // let arguments = vec![
-    //     Value::FixedBytes(Bytes::from(message.to_fixed_bytes().to_vec())),
-    //     Value::Bytes(Bytes::from(signature)),
-    // ];
+    let arguments = vec![
+        Value::FixedBytes(Bytes::from(message.to_fixed_bytes().to_vec())),
+        Value::Bytes(Bytes::from(signature)),
+    ];
 
-    // let calldata = encode_calldata(raw_function_signature, &arguments).unwrap();
+    let calldata = encode_calldata(raw_function_signature, &arguments).unwrap();
 
-    // // Call the contract signing with the private key and wait for its receipt.
-    // let response = eth_client
-    //     .call(
-    //         deployed_address,
-    //         Bytes::from(calldata),
-    //         Overrides {
-    //             value: Some(U256::from_dec_str("2000000")?),
-    //             nonce: Some(0),
-    //             chain_id: Some(9),
-    //             gas_limit: Some(2000000),
-    //             max_fee_per_gas: Some(2000000),
-    //             max_priority_fee_per_gas: Some(20000),
-    //             ..Default::default()
-    //         },
-    //     )
-    //     .await?;
+    // Call the contract signing with the private key and wait for its receipt.
+    let response = eth_client
+        .call(
+            deployed_address,
+            Bytes::from(calldata),
+            Overrides {
+                value: Some(U256::from_dec_str("0")?),
+                nonce: Some(0),
+                chain_id: Some(9),
+                gas_limit: Some(2000000),
+                max_fee_per_gas: Some(2000000),
+                max_priority_fee_per_gas: Some(20000),
+                ..Default::default()
+            },
+        )
+        .await?;
 
-    // println!("Call response: {response}");
-    // // Get the new current block.
-    // let to_block = eth_client.get_block_number().await?;
+    println!("Call response: {response}");
+    // Get the new current block.
+    let to_block = eth_client.get_block_number().await?;
 
-    // // Get the emitted logs using the current block and the previous current block.
-    // let logs = eth_client
-    //     .get_logs_from_signature(
-    //         from_block,
-    //         to_block,
-    //         deployed_address,
-    //         "recoverSigner(bytes32,bytes)",
-    //     )
-    //     .await?;
+    // Get the emitted logs using the current block and the previous current block.
+    let logs = eth_client
+        .get_logs_from_signature(
+            from_block,
+            to_block,
+            deployed_address,
+            "recoverSigner(bytes32,bytes)",
+        )
+        .await?;
 
-    // println!("Logs: {:?}", logs);
+    println!("Logs: {:?}", logs);
 
     Ok(())
 }

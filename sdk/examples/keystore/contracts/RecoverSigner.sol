@@ -22,8 +22,3 @@ contract RecoverSigner {
         emit RecoveredSigner(signer);
     }
 }
-
-// generate binary:
-// npm init -y
-// npm install @openzeppelin/contracts
-// solc --bin recoverSigner.sol --base-path . --include-path node_modules/ -o solc_out --overwrite 

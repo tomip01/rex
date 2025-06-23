@@ -16,6 +16,4 @@ target/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
-sdk/examples/contracts/package.json
-sdk/examples/contracts/package-lock.json
-sdk/examples/contracts/node_modules/
+sdk/examples/keystore/contracts/solc_out/
