@@ -19,7 +19,6 @@ use std::str::FromStr;
 struct ExampleArgs {
     #[arg(
         long,
-        default_value = "5d2344259f42259f82d2c140aa66102ba89b57b4883ee441a8b312622bd42491",
         env = "PRIVATE_KEY",
         help = "The private key to derive the address from."
     )]
