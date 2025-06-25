@@ -52,7 +52,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let eth_client = EthClient::new(&args.rpc_url);
 
     // 4. Fund the keystore account.
-    let rich_wallet_pk = SecretKey::from_str(&args.private_key)?;
+    let pk = &args
+        .private_key
+        .strip_prefix("0x")
+        .unwrap_or(&args.private_key);
+    let rich_wallet_pk = SecretKey::from_str(&pk)?;
     let rich_wallet_address = get_address_from_secret_key(&rich_wallet_pk)?;
     let amount = U256::from_dec_str("1000000000000000000").expect("Failed to parse amount");
     let transfer_tx_hash = transfer(
