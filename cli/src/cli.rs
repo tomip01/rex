@@ -331,19 +331,8 @@ impl Command {
 
                 let client = EthClient::new(&rpc_url)?;
 
-                let tx_hash = transfer(
-                    args.amount,
-                    from,
-                    args.to,
-                    args.private_key,
-                    &client,
-                    Overrides {
-                        value: Some(args.amount),
-                        nonce: args.nonce,
-                        ..Default::default()
-                    },
-                )
-                .await?;
+                let tx_hash =
+                    transfer(args.amount, from, args.to, &args.private_key, &client).await?;
 
                 println!("{tx_hash:#x}");
 

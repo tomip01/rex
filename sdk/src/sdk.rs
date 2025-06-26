@@ -1,4 +1,5 @@
 use crate::client::{EthClient, EthClientError, Overrides};
+use ethrex_common::types::GenericTransaction;
 use ethrex_common::{Address, H256, U256};
 use ethrex_rpc::types::receipt::RpcReceipt;
 use secp256k1::SecretKey;
@@ -13,18 +14,46 @@ pub mod utils;
 
 pub mod l2;
 
+#[derive(Debug, thiserror::Error)]
+pub enum SdkError {
+    #[error("Failed to parse address from hex")]
+    FailedToParseAddressFromHex,
+}
+
 pub async fn transfer(
-    _amount: U256,
+    amount: U256,
     from: Address,
     to: Address,
-    private_key: SecretKey,
+    private_key: &SecretKey,
     client: &EthClient,
-    overrides: Overrides,
 ) -> Result<H256, EthClientError> {
-    let tx = client
-        .build_eip1559_transaction(to, from, Default::default(), overrides)
+    let gas_price = client
+        .get_gas_price_with_extra(20)
+        .await?
+        .try_into()
+        .map_err(|_| {
+            EthClientError::InternalError("Failed to convert gas_price to a u64".to_owned())
+        })?;
+
+    let mut tx = client
+        .build_eip1559_transaction(
+            to,
+            from,
+            Default::default(),
+            Overrides {
+                value: Some(amount),
+                max_fee_per_gas: Some(gas_price),
+                max_priority_fee_per_gas: Some(gas_price),
+                ..Default::default()
+            },
+        )
         .await?;
-    client.send_eip1559_transaction(&tx, &private_key).await
+
+    let mut tx_generic: GenericTransaction = tx.clone().into();
+    tx_generic.from = from;
+    let gas_limit = client.estimate_gas(tx_generic).await?;
+    tx.gas_limit = gas_limit;
+    client.send_eip1559_transaction(&tx, private_key).await
 }
 
 pub async fn wait_for_transaction_receipt(

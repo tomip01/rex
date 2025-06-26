@@ -2,10 +2,7 @@ use clap::Parser;
 use ethrex_common::{Address, Bytes, U256};
 use hex::FromHexError;
 use rex_sdk::{
-    client::{
-        EthClient, Overrides,
-        eth::{BlockByNumber, get_address_from_secret_key},
-    },
+    client::{EthClient, eth::BlockByNumber, eth::get_address_from_secret_key},
     transfer, wait_for_transaction_receipt,
 };
 use secp256k1::SecretKey;
@@ -60,19 +57,9 @@ async fn main() {
     let from = account;
     let to = Address::from_str("0x4852f44fd706e34cb906b399b729798665f64a83").unwrap();
 
-    let tx_hash = transfer(
-        amount,
-        from,
-        to,
-        args.private_key,
-        &eth_client,
-        Overrides {
-            value: Some(amount),
-            ..Default::default()
-        },
-    )
-    .await
-    .unwrap();
+    let tx_hash = transfer(amount, from, to, &args.private_key, &eth_client)
+        .await
+        .unwrap();
 
     // Wait for the transaction to be finalized
     wait_for_transaction_receipt(tx_hash, &eth_client, 100, false)

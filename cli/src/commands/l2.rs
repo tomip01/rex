@@ -6,15 +6,14 @@ use crate::{
 use clap::Subcommand;
 use ethrex_common::{Address, H256, U256};
 use rex_sdk::{
-    client::{EthClient, Overrides, eth::get_address_from_secret_key},
+    client::{EthClient, eth::get_address_from_secret_key},
     l2::{
-        deposit::deposit,
+        deposit::deposit_through_contract_call,
         withdraw::{claim_withdraw, get_withdraw_merkle_proof, withdraw},
     },
     wait_for_transaction_receipt,
 };
 use secp256k1::SecretKey;
-
 #[derive(Subcommand)]
 pub(crate) enum Command {
     #[clap(about = "Get the account's balance on L2.", visible_aliases = ["bal", "b"])]
@@ -138,7 +137,10 @@ pub(crate) enum Command {
         explorer_url: bool,
         #[clap(value_parser = parse_private_key, env = "PRIVATE_KEY")]
         private_key: SecretKey,
-        #[arg(env = "BRIDGE_ADDRESS")]
+        #[arg(
+            env = "BRIDGE_ADDRESS",
+            help = "Make sure you are using the correct bridge address before submitting your deposit."
+        )]
         bridge_address: Address,
         #[arg(default_value = "http://localhost:8545", env = "L1_RPC_URL")]
         l1_rpc_url: String,
@@ -262,30 +264,25 @@ impl Command {
                 if explorer_url {
                     todo!("Display transaction URL in the explorer")
                 }
-
-                if to.is_some() {
-                    // There are two ways of depositing funds into the L2:
-                    // 1. Directly transferring funds to the bridge.
-                    // 2. Depositing through a contract call to the deposit method of the bridge.
-                    // The second method is not handled in the CLI yet.
-                    todo!("Handle deposits through contract")
-                }
-
                 if token_address.is_some() {
                     todo!("Handle ERC20 deposits")
                 }
 
-                let from = get_address_from_secret_key(&private_key)?;
-
                 let eth_client = EthClient::new(&l1_rpc_url)?;
 
-                let tx_hash = deposit(
+                let to = to.unwrap_or(get_address_from_secret_key(&private_key)?);
+
+                println!("Depositing {amount} from {to:#x} to bridge");
+
+                // TODO: estimate l1&l2 gas price
+                let tx_hash = deposit_through_contract_call(
                     amount,
-                    from,
-                    private_key,
-                    &eth_client,
+                    to,
+                    21000 * 10,
+                    21000 * 10,
+                    &private_key,
                     bridge_address,
-                    Overrides::default(),
+                    &eth_client,
                 )
                 .await?;
 
