@@ -8,7 +8,7 @@ use ethrex_common::{Address, H256, U256};
 use rex_sdk::{
     client::{EthClient, eth::get_address_from_secret_key},
     l2::{
-        deposit::deposit_through_contract_call,
+        deposit::{deposit_erc20, deposit_through_contract_call},
         withdraw::{claim_withdraw, get_withdraw_merkle_proof, withdraw},
     },
     wait_for_transaction_receipt,
@@ -261,30 +261,39 @@ impl Command {
                 l1_rpc_url,
                 bridge_address,
             } => {
+                let eth_client = EthClient::new(&l1_rpc_url)?;
+                let to = to.unwrap_or(get_address_from_secret_key(&private_key)?);
+                println!("Depositing {amount} from {to:#x} to bridge");
                 if explorer_url {
                     todo!("Display transaction URL in the explorer")
                 }
-                if token_address.is_some() {
-                    todo!("Handle ERC20 deposits")
-                }
 
-                let eth_client = EthClient::new(&l1_rpc_url)?;
-
-                let to = to.unwrap_or(get_address_from_secret_key(&private_key)?);
-
-                println!("Depositing {amount} from {to:#x} to bridge");
-
-                // TODO: estimate l1&l2 gas price
-                let tx_hash = deposit_through_contract_call(
-                    amount,
-                    to,
-                    21000 * 10,
-                    21000 * 10,
-                    &private_key,
-                    bridge_address,
-                    &eth_client,
-                )
-                .await?;
+                // Deposit through ERC20 token transfer
+                let tx_hash = if let Some(token_address) = token_address {
+                    let from = get_address_from_secret_key(&private_key)?;
+                    deposit_erc20(
+                        token_address,
+                        Address::random(),
+                        amount,
+                        from,
+                        private_key,
+                        &eth_client,
+                        bridge_address,
+                    )
+                    .await?
+                } else {
+                    // TODO: estimate l1&l2 gas price
+                    deposit_through_contract_call(
+                        amount,
+                        to,
+                        21000 * 10,
+                        21000 * 10,
+                        &private_key,
+                        bridge_address,
+                        &eth_client,
+                    )
+                    .await?
+                };
 
                 println!("Deposit sent: {tx_hash:#x}");
 
