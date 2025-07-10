@@ -318,7 +318,6 @@ impl Command {
 
                 let tx_hash = claim_withdraw(
                     claimed_amount,
-                    l2_withdrawal_tx_hash,
                     from,
                     private_key,
                     &eth_client,
