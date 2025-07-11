@@ -271,7 +271,6 @@ impl Command {
             } => {
                 let eth_client = EthClient::new(&l1_rpc_url)?;
                 let to = to.unwrap_or(get_address_from_secret_key(&private_key)?);
-                println!("Depositing {amount} from {to:#x} to bridge");
 
                 if explorer_url {
                     todo!("Display transaction URL in the explorer")
@@ -294,6 +293,7 @@ impl Command {
                     )
                     .await?
                 } else {
+                    println!("Depositing {amount} from {to:#x} to bridge");
                     // TODO: estimate l1&l2 gas price
                     deposit_through_contract_call(
                         amount,
