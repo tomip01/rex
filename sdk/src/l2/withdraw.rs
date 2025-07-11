@@ -1,6 +1,9 @@
 use crate::{
     calldata::{Value, encode_calldata},
-    client::{EthClient, EthClientError, Overrides, eth::L1MessageProof},
+    client::{
+        EthClient, EthClientError, Overrides,
+        eth::{L1MessageProof, get_address_from_secret_key},
+    },
     l2::{
         constants::{
             CLAIM_WITHDRAWAL_ERC20_SIGNATURE, COMMON_BRIDGE_L2_ADDRESS, L2_WITHDRAW_SIGNATURE,
@@ -129,12 +132,12 @@ pub async fn claim_erc20withdraw(
     token_l1: Address,
     token_l2: Address,
     amount: U256,
-    from: Address,
     from_pk: SecretKey,
     eth_client: &EthClient,
     message_proof: &L1MessageProof,
     bridge_address: Address,
 ) -> Result<H256, EthClientError> {
+    let from = get_address_from_secret_key(&from_pk)?;
     let calldata_values = vec![
         Value::Address(token_l1),
         Value::Address(token_l2),
