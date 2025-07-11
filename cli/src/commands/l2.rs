@@ -9,7 +9,10 @@ use rex_sdk::{
     client::{EthClient, eth::get_address_from_secret_key},
     l2::{
         deposit::{deposit_erc20, deposit_through_contract_call},
-        withdraw::{claim_withdraw, get_withdraw_merkle_proof, withdraw, withdraw_erc20},
+        withdraw::{
+            claim_erc20withdraw, claim_withdraw, get_withdraw_merkle_proof, withdraw,
+            withdraw_erc20,
+        },
     },
     wait_for_transaction_receipt,
 };
@@ -359,15 +362,31 @@ impl Command {
                     "No withdrawal proof found for transaction {l2_withdrawal_tx_hash:#x}"
                 ))?;
 
-                let tx_hash = claim_withdraw(
-                    claimed_amount,
-                    from,
-                    private_key,
-                    &eth_client,
-                    &withdrawal_proof,
-                    bridge_address,
-                )
-                .await?;
+                let tx_hash = if let Some(token_l1) = token_l1 {
+                    let token_l2 = token_l2.expect(
+                        "Token address on L2 is required if token address on L1 is specified",
+                    );
+                    claim_erc20withdraw(
+                        token_l1,
+                        token_l2,
+                        claimed_amount,
+                        private_key,
+                        &eth_client,
+                        &withdrawal_proof,
+                        bridge_address,
+                    )
+                    .await?
+                } else {
+                    claim_withdraw(
+                        claimed_amount,
+                        from,
+                        private_key,
+                        &eth_client,
+                        &withdrawal_proof,
+                        bridge_address,
+                    )
+                    .await?
+                };
 
                 println!("Withdrawal claim sent: {tx_hash:#x}");
 
