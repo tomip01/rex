@@ -2,7 +2,10 @@ use crate::{
     calldata::{Value, encode_calldata},
     client::{EthClient, EthClientError, Overrides, eth::L1MessageProof},
     l2::{
-        constants::{COMMON_BRIDGE_L2_ADDRESS, L2_WITHDRAW_SIGNATURE, L2_WITHDRAW_SIGNATURE_ERC20},
+        constants::{
+            CLAIM_WITHDRAWAL_ERC20_SIGNATURE, COMMON_BRIDGE_L2_ADDRESS, L2_WITHDRAW_SIGNATURE,
+            L2_WITHDRAW_SIGNATURE_ERC20,
+        },
         merkle_tree::merkle_proof,
     },
 };
@@ -108,6 +111,56 @@ pub async fn claim_withdraw(
     let claim_tx = eth_client
         .build_eip1559_transaction(
             bridge_address,
+            from,
+            claim_withdrawal_data.into(),
+            Overrides {
+                from: Some(from),
+                ..Default::default()
+            },
+        )
+        .await?;
+
+    eth_client
+        .send_eip1559_transaction(&claim_tx, &from_pk)
+        .await
+}
+
+pub async fn claim_erc20withdraw(
+    token_l1: Address,
+    token_l2: Address,
+    amount: U256,
+    from_pk: SecretKey,
+    eth_client: &EthClient,
+    message_proof: &L1MessageProof,
+) -> Result<H256, EthClientError> {
+    let from = get_address_from_secret_key(&from_pk)?;
+
+    let calldata_values = vec![
+        Value::Address(token_l1),
+        Value::Address(token_l2),
+        Value::Uint(amount),
+        Value::Uint(U256::from(message_proof.batch_number)),
+        Value::Uint(message_proof.message_id),
+        Value::Array(
+            message_proof
+                .merkle_proof
+                .iter()
+                .map(|v| Value::Uint(U256::from_big_endian(v.as_bytes())))
+                .collect(),
+        ),
+    ];
+
+    let claim_withdrawal_data =
+        encode_calldata(CLAIM_WITHDRAWAL_ERC20_SIGNATURE, &calldata_values)?;
+
+    println!(
+        "Claiming withdrawal with calldata: {}",
+        hex::encode(&claim_withdrawal_data)
+    );
+
+    let claim_tx = eth_client
+        .build_eip1559_transaction(
+            bridge_address().map_err(|err| EthClientError::Custom(err.to_string()))?,
             from,
             claim_withdrawal_data.into(),
             Overrides {
