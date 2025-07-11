@@ -65,6 +65,19 @@ pub(crate) enum Command {
         claimed_amount: U256,
         l2_withdrawal_tx_hash: H256,
         #[clap(
+            long = "token-l1",
+            help = "ERC20 token address on L1",
+            long_help = "Specify the token address, the base token is used as default."
+        )]
+        token_l1: Option<Address>,
+        #[clap(
+            long = "token-l2",
+            help = "ERC20 token address on L2",
+            long_help = "Specify the token address, it is required if you specify a token on L1.",
+            requires("token-l1")
+        )]
+        token_l2: Option<Address>,
+        #[clap(
             long,
             short = 'c',
             required = false,
@@ -208,11 +221,18 @@ pub(crate) enum Command {
         #[clap(long = "nonce")]
         nonce: Option<u64>,
         #[clap(
-            long = "token",
-            help = "ERC20 token address",
+            long = "token-l1",
+            help = "ERC20 token address on L1",
             long_help = "Specify the token address, the base token is used as default."
         )]
-        token_address: Option<Address>,
+        token_l1: Option<Address>,
+        #[clap(
+            long = "token-l2",
+            help = "ERC20 token address on L2",
+            long_help = "Specify the token address, it is required if you specify a token on L1.",
+            requires("token-l1")
+        )]
+        token_l2: Option<Address>,
         #[clap(
             long,
             short = 'c',
@@ -316,6 +336,8 @@ impl Command {
             Command::ClaimWithdraw {
                 claimed_amount,
                 l2_withdrawal_tx_hash,
+                token_l1,
+                token_l2,
                 cast,
                 silent,
                 private_key,
@@ -356,7 +378,8 @@ impl Command {
             Command::Withdraw {
                 amount,
                 nonce,
-                token_address,
+                token_l1,
+                token_l2,
                 cast,
                 silent,
                 explorer_url,
@@ -371,7 +394,7 @@ impl Command {
                     todo!("Display transaction URL in the explorer")
                 }
 
-                if token_address.is_some() {
+                if token_l1.is_some() {
                     // withdraw_erc20(..)
                     todo!("Handle ERC20 withdrawals")
                 }
