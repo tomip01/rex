@@ -11,4 +11,6 @@ pub const COMMON_BRIDGE_L2_ADDRESS: Address = H160([
 
 pub const L2_WITHDRAW_SIGNATURE: &str = "withdraw(address)";
 
+pub const L2_WITHDRAW_SIGNATURE_ERC20: &str = "withdrawERC20(address,address,address,uint256)";
+
 // Function Selectors

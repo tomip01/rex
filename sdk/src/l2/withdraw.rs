@@ -2,7 +2,7 @@ use crate::{
     calldata::{Value, encode_calldata},
     client::{EthClient, EthClientError, Overrides, eth::L1MessageProof},
     l2::{
-        constants::{COMMON_BRIDGE_L2_ADDRESS, L2_WITHDRAW_SIGNATURE},
+        constants::{COMMON_BRIDGE_L2_ADDRESS, L2_WITHDRAW_SIGNATURE, L2_WITHDRAW_SIGNATURE_ERC20},
         merkle_tree::merkle_proof,
     },
 };
@@ -38,6 +38,36 @@ pub async fn withdraw(
         .await?;
 
     proposer_client
+        .send_eip1559_transaction(&withdraw_transaction, &from_pk)
+        .await
+}
+
+pub async fn withdraw_erc20(
+    amount: U256,
+    from: Address,
+    from_pk: SecretKey,
+    token_l1: Address,
+    token_l2: Address,
+    l2_client: &EthClient,
+) -> Result<H256, EthClientError> {
+    let data = [
+        Value::Address(token_l1),
+        Value::Address(token_l2),
+        Value::Address(from),
+        Value::Uint(amount),
+    ];
+    let withdraw_data = encode_calldata(L2_WITHDRAW_SIGNATURE_ERC20, &data)
+        .expect("Failed to encode calldata for withdraw ERC20");
+    let withdraw_transaction = l2_client
+        .build_eip1559_transaction(
+            COMMON_BRIDGE_L2_ADDRESS,
+            from,
+            Bytes::from(withdraw_data),
+            Default::default(),
+        )
+        .await?;
+
+    l2_client
         .send_eip1559_transaction(&withdraw_transaction, &from_pk)
         .await
 }

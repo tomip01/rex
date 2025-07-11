@@ -9,7 +9,7 @@ use rex_sdk::{
     client::{EthClient, eth::get_address_from_secret_key},
     l2::{
         deposit::{deposit_erc20, deposit_through_contract_call},
-        withdraw::{claim_withdraw, get_withdraw_merkle_proof, withdraw},
+        withdraw::{claim_withdraw, get_withdraw_merkle_proof, withdraw, withdraw_erc20},
     },
     wait_for_transaction_receipt,
 };
@@ -363,17 +363,18 @@ impl Command {
                 private_key,
                 rpc_url,
             } => {
+                let from = get_address_from_secret_key(&private_key)?;
+
+                let client = EthClient::new(&rpc_url)?;
+
                 if explorer_url {
                     todo!("Display transaction URL in the explorer")
                 }
 
                 if token_address.is_some() {
+                    // withdraw_erc20(..)
                     todo!("Handle ERC20 withdrawals")
                 }
-
-                let from = get_address_from_secret_key(&private_key)?;
-
-                let client = EthClient::new(&rpc_url)?;
 
                 let tx_hash = withdraw(amount, from, private_key, &client, nonce).await?;
 
