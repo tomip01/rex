@@ -259,7 +259,7 @@ impl Command {
         match self {
             Command::Deposit {
                 amount,
-                token_l1: token_address,
+                token_l1,
                 token_l2,
                 to,
                 cast,
@@ -277,7 +277,7 @@ impl Command {
                 }
 
                 // Deposit through ERC20 token transfer
-                let tx_hash = if let Some(token_address) = token_address {
+                let tx_hash = if let Some(token_address) = token_l1 {
                     let token_l2 = token_l2.expect(
                         "Token address on L2 is required if token address on L1 is specified",
                     );
