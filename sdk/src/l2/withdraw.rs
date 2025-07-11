@@ -129,12 +129,12 @@ pub async fn claim_erc20withdraw(
     token_l1: Address,
     token_l2: Address,
     amount: U256,
+    from: Address,
     from_pk: SecretKey,
     eth_client: &EthClient,
     message_proof: &L1MessageProof,
+    bridge_address: Address,
 ) -> Result<H256, EthClientError> {
-    let from = get_address_from_secret_key(&from_pk)?;
-
     let calldata_values = vec![
         Value::Address(token_l1),
         Value::Address(token_l2),
@@ -160,7 +160,7 @@ pub async fn claim_erc20withdraw(
 
     let claim_tx = eth_client
         .build_eip1559_transaction(
-            bridge_address().map_err(|err| EthClientError::Custom(err.to_string()))?,
+            bridge_address,
             from,
             claim_withdrawal_data.into(),
             Overrides {

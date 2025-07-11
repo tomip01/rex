@@ -9,7 +9,7 @@ use rex_sdk::{
     client::{EthClient, eth::get_address_from_secret_key},
     l2::{
         deposit::{deposit_erc20, deposit_through_contract_call},
-        withdraw::{claim_withdraw, get_withdraw_merkle_proof, withdraw, withdraw_erc20},
+        withdraw::{claim_withdraw, get_withdraw_merkle_proof, withdraw},
     },
     wait_for_transaction_receipt,
 };
