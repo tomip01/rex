@@ -308,7 +308,7 @@ impl Command {
             } => {
                 let nonce = nonce.unwrap_or(
                     EthClient::new(&rpc_url)?
-                        .get_nonce(address, BlockByNumber::Latest)
+                        .get_nonce(deployer, BlockByNumber::Latest)
                         .await?,
                 );
 
