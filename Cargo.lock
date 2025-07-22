@@ -5463,7 +5463,6 @@ dependencies = [
  "ethrex-blockchain",
  "ethrex-common",
  "ethrex-l2",
- "ethrex-l2-rpc",
  "ethrex-rlp",
  "ethrex-rpc",
  "eyre",
