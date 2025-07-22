@@ -7,7 +7,7 @@ $(jq -n --arg text "$2" '{
             "type": "header",
             "text": {
                 "type": "plain_text",
-                "text": "Daily Rex report"
+                "text": "Daily rexport"
             }
         },
         {
