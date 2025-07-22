@@ -49,7 +49,7 @@ pub async fn deposit_through_contract_call(
         .await?;
     let signer = Signer::Local(LocalSigner::new(*depositor_private_key));
 
-    send_eip1559_transaction(&eth_client, &deposit_tx, &signer).await
+    send_eip1559_transaction(eth_client, &deposit_tx, &signer).await
 }
 
 pub async fn deposit_erc20(
@@ -88,5 +88,5 @@ pub async fn deposit_erc20(
 
     let signer = Signer::Local(LocalSigner::new(from_pk));
 
-    send_eip1559_transaction(&eth_client, &deposit_tx, &signer).await
+    send_eip1559_transaction(eth_client, &deposit_tx, &signer).await
 }

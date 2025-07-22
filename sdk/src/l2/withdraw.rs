@@ -41,7 +41,7 @@ pub async fn withdraw(
 
     let signer = Signer::Local(LocalSigner::new(from_pk));
 
-    send_eip1559_transaction(&proposer_client, &withdraw_transaction, &signer).await
+    send_eip1559_transaction(proposer_client, &withdraw_transaction, &signer).await
 }
 
 pub async fn claim_withdraw(
@@ -90,7 +90,7 @@ pub async fn claim_withdraw(
         .await?;
     let signer = Signer::Local(LocalSigner::new(from_pk));
 
-    send_eip1559_transaction(&eth_client, &claim_tx, &signer).await
+    send_eip1559_transaction(eth_client, &claim_tx, &signer).await
 }
 
 /// Returns the formatted hash of the withdrawal transaction,

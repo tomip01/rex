@@ -96,7 +96,7 @@ impl EthClient {
             .await?;
 
         let signer = Signer::Local(LocalSigner::new(deployer_private_key));
-        let deploy_tx_hash = send_eip1559_transaction(&self, &deploy_tx, &signer).await?;
+        let deploy_tx_hash = send_eip1559_transaction(self, &deploy_tx, &signer).await?;
 
         let nonce = self
             .get_nonce(deployer, BlockIdentifier::Tag(BlockTag::Latest))
