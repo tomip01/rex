@@ -5161,7 +5161,6 @@ dependencies = [
  "hex",
  "itertools 0.14.0",
  "keccak-hash",
- "log",
  "rex-sdk",
  "secp256k1",
  "serde",
@@ -5170,8 +5169,6 @@ dependencies = [
  "strum 0.27.1",
  "tokio",
  "toml",
- "tracing",
- "tracing-subscriber",
 ]
 
 [[package]]
