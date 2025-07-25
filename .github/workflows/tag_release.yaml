@@ -40,7 +40,7 @@ jobs:
 
       - name: Build rex
         run: |
-          cargo build --release --bin cli
+          cargo build --release --bin rex
           mv target/release/rex rex-${{ matrix.os }}_${{ matrix.arch }}
 
       - name: Upload artifact
