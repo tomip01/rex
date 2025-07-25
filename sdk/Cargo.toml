@@ -7,6 +7,7 @@ edition.workspace = true
 ethrex-l2.workspace = true
 ethrex-common.workspace = true
 ethrex-blockchain.workspace = true
+
 ethrex-rlp.workspace = true
 
 ethrex-rpc.workspace = true
