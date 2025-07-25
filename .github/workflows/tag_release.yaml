@@ -2,6 +2,8 @@ name: Rex Release
 
 on:
   push:
+    branches: [feat/rex-releases]
+  push:
     tags:
       - "v[0-9]+.[0-9]+.[0-9]+-*"
 
